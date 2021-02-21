@@ -1,0 +1,97 @@
+---
+title: "Лабораторная работа №1"
+author: "Галиченко Евгений Александрович"
+date: "15 02 2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+C помощью пакета rvest или парсинга XML с помощью xpath запростов соберите данные с сайта согласно своему варианту. В итоговой таблице должно быть не менее 50 записей и не менее 5 признаков, из которых как минимум два количественныхю Снабдите файл справочником в формате Markdawn.
+Результаты: 
+* .csv-файл с данными, .md-файл со справочником, .Rmd-файл с кодом загрузки данных разместить в репозитории github.
+* Файл .Rmd должен содержать постановку задачи и комментарии по ходу сбора данных.
+
+
+```{r, warning=FALSE}
+library('rvest')
+# Ссылка на топ 20 фильмов 2018 года
+url <- 'https://www.kinopoisk.ru/top/y/2018/'
+
+webpage <- read_html(url)
+
+# Получаем названия всех фильмов на русском языке
+names_data <- webpage %>% html_nodes(".all") %>% html_text
+new_names_data <- names_data[3:22]
+length(new_names_data)
+new_names_data
+
+# Функция перебора тегов внутри тегов более высокого уровня
+get_tags <- function(node){
+  raw_data <- html_nodes(node, selector) %>% html_text
+  data_NAs <- ifelse(length(raw_data) == 0, NA, raw_data)
+}
+
+selector <- '.text-grey'
+
+en_names_data = array()
+
+# Получаем названия всех фильмов на английском языке
+for(i in 1:length(new_names_data)){
+  tag <- paste0('#top250_place_', toString(i))
+  doc <- html_nodes(webpage, tag)
+  en_names <- sapply(doc, get_tags)
+  en_names_data <- append(en_names_data, en_names)
+}
+
+en_names_data = en_names_data[2:length(en_names_data)]
+en_names_data
+
+# Получаем рейтинг фильмов
+rating_data <- webpage %>% html_nodes(".continue") %>% html_text
+length(rating_data)
+# Превращаем строку в число
+rating_data <- as.numeric(rating_data)
+rating_data
+
+# Получаем количество проголосовавших пользователей
+users_data <- webpage %>% html_nodes(".js-rum-hero div span") %>% html_text
+# Избавляемся от скобок "()"
+users_data <- gsub("[[:punct:]]", "", users_data)
+# Избавляемся от пробелов
+users_data <- gsub(pattern = "\\s", replacement = "", x=users_data)
+length(users_data)
+# Переводим строку в число
+users_data <- as.numeric(users_data)
+users_data
+
+# Получаем ранк фильма в списке
+place_data <- webpage %>% html_nodes(".js-rum-hero td a") %>% html_attr("name")
+bad <- is.na(place_data)
+place_data[!bad]
+
+
+# Оформляем все в дата фрейм
+DF_top_movies <- data.frame(Place = place_data[!bad], Ru_name = new_names_data,
+                            En_name = en_names_data,
+                            Rating = rating_data,
+                            Vote = users_data)
+
+data.dir <- './data'
+
+# Создаем директорию для данных
+if (!file.exists(data.dir)) {
+  dir.create(data.dir)
+}
+
+# Создаём файл с логом загрузок
+log.filename <- './data/download.log'
+if (!file.exists(log.filename)) file.create(log.filename)
+
+# Загружаем данные в .csv файл
+write.csv(DF_top_movies, file = './data/DF_top_movie.csv', row.names = FALSE)
+write(paste('Файл "DF_top_movies.csv" записан!', Sys.time()), file = log.filename, append = TRUE)
+```
