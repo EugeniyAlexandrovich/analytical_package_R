@@ -1,0 +1,17 @@
+0301 - Fish; live
+0302 - Fish; fresh of chilled, excluding fish fillets and other fish meat of heading 0304
+0303 - Fish; frozen, excluding fish fillets and other fish meat of headinf 0304
+0304 - Fish fillets and other fish meat (whether or not minced); fresh, chilled or frozen
+0305 - Fish; dried, salted or in brine, smoked fish, whether or not cooked before or during the smoking process, fish meal fit for human consumption
+0306 - Crustaceans; in shell or not, live, fresh, chilled, frozen, dried, salted or in brine; smoked or not before or during smoking; in shell, steamed or boiled, whether or not chilled, frozen, dried, salted or in brine; edible flours, meals, pellets
+0307 - Molluscs; whether in shell or not, live, fresh, chilled, frozen, dried, salted or in brine; smoked molluscs, whether in shell or not, cooked or not before or during the smoking process; flours, meals and pellets of molluscs, fit for human consumption
+0308 - Aquatic invertebrates, other than crustaceans and molluscs; live, fresh, chilled, frozen, dried, salted or in brine, smoked, whether or not cooked before or during the smoking process; flours, meals and pellets, fit for human consumption
+
+0301 - Рыба; живая
+0302 - Рыба; свежая из охлажденных, кроме рыбного филе и прочего мяса рыбы товарной позиции 0304
+0303 - Рыба; замороженная, кроме рыбного филе и прочего мяса рыбы товарной позиции 0304
+0304 - Рыбное филе и прочая рыба (без фарша); свежие, охлажденные или замороженные
+0305 - Рыба; сушеная, соленая или в рассоле, копченая рыба, приготовленная или не приготовленная до или во время процесса копчения, рыбная мука, пригодная для употребления в пищу
+0306 - Ракообразные; в скорлупе или без, живые, свежие, охлажденные, мороженые, сушеные, соленые или в рассоле; курили или не курили до или во время курения; в скорлупе, вареные или вареные, охлажденные, замороженные, сушеные, соленые или в рассоле; пищевая мука, шроты, пеллеты
+0307 - Моллюски; в скорлупе или без, живые, свежие, охлажденные, замороженные, сушеные, соленые или в рассоле; копченые моллюски, в скорлупе или без, приготовленные до или во время процесса копчения; мука, шроты и гранулы из моллюсков, пригодные для употребления в пищу
+0308 - Водные беспозвоночные, кроме ракообразных и моллюсков; живые, свежие, охлажденные, замороженные, сушеные, соленые или в рассоле, копченые, независимо от того, приготовлены ли они до или во время процесса копчения; мука, шроты и гранулы, пригодные для употребления в пищу
