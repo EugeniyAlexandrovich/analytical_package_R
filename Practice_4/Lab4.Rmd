@@ -1,0 +1,148 @@
+---
+title: "Лабораторная Работа №4"
+author: "Галиченко Евгений Александрович"
+date: "02 04 2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Постановка задачи:
+С помощью "knitr" создать html-отчет с короткими пояснениями к данным и с двумя картами:
+1. Карта-хороплет регионов РФ, входящих в состав федерального округа, указанного в варианте, построенная функция spplot() по данным сборников "Регионы России" за последний доступный год.
+2. Такая же карта но со статистикой за 2010 год, построенная функцией ggplot().
+
+В отчёт включить код загрузки данных. Данные можно предварительно подготовить для отображения и сохранить в .csvфайле в репозитории на github. Данные по регионам можно  загрузить  в Rнапрямую  с  Росстата  функцией  из  репозитория: https://github.com/nillsondg/r_gks_stat_data. Разместить отчёт на RPubs, его код –на github, и отправить ссылки на них на почту s.aksuk@kiber-guu.ru.
+
+## Вариант - 4
+
+Приволжский федеральный округ, любой показатель из раздела «Образование».
+
+Данные взяты по показателю: "ЧИСЛО ПЕРСОНАЛЬНЫХ КОМПЬЮТЕРОВ, ИСПОЛЬЗУЕМЫХ В УЧЕБНЫХ ЦЕЛЯХ,
+В ГОСУДАРСТВЕННЫХ И МУНИЦИПАЛЬНЫХ ОБЩЕОБРАЗОВАТЕЛЬНЫХ УЧРЕЖДЕНИЯХ,
+ОБРАЗОВАТЕЛЬНЫХ УЧРЕЖДЕНИЯХ НАЧАЛЬНОГО, СРЕДНЕГО И ВЫСШЕГО
+ПРОФЕССИОНАЛЬНОГО ОБРАЗОВАНИЯ на 1000 ОБУЧАЮЩИХСЯ (СТУДЕНТОВ)" для общеобразовательных учреждений
+
+За 2019 год для первой карты и 2010 для второй карты
+
+```{r, warning=FALSE, message=FALSE}
+library('R.utils')               # gunzip() для распаковки архивов 
+library('sp')                    # функция spplot()
+library('ggplot2')               # функция ggplot()
+library('RColorBrewer')          # цветовые палитры
+require('rgdal')                 # функция readOGR()
+library('broom')                 # функция tidy()
+require('dplyr')                 # функция join()
+library('scales')                # функция pretty_breaks()
+library('mapproj')               # проекции для карт
+## установка и сборка пакета «gpclib»
+## установить RTools (recommended) отсюда:
+## http://cran.r-project.org/bin/windows/Rtools/
+#install.packages('gpclib', type = 'source')
+library('gpclib')
+library('maptools')
+# разрешить использовать полигональную геометрию, которая защищена лицензией
+gpclibPermit()
+Regions <- readOGR("./data/admin_level_4.shp")
+
+
+#slotNames(Regions)
+
+#Regions@data
+
+# Загружаем данные с росстата
+data <- read.csv2('./data/data_2010.csv', stringsAsFactors = FALSE)
+data
+# Индексы нужных нам регионов
+reg <- c(4, 19, 29, 43, 44, 49, 47, 53, 77, 78, 30, 41, 40, 54)
+
+# Оставляем только нужные регионы
+Regions <- Regions[reg, ]
+#Regions@data
+# Преобразуем имена в факторы
+Regions@data$name <- as.factor(Regions@data$name)
+
+#spplot(Regions, 'name', scales = list(draw = T))
+# Делаем слияние шейп-файла с данными с росстата
+Regions@data <- merge(Regions@data, data, by.x = 'name', by.y = 'region', sort = FALSE)
+#Regions@data <- data.frame(Regions@data, data[match(Regions@data$name, data$region), ])
+# 
+# Regions@data[!is.na(Regions@data$stat), ]
+#Regions@data$name
+ 
+# Задаём палитру
+mypalette <-colorRampPalette(c('whitesmoke', 'coral3'))
+
+#Regions
+# Строим карту
+spplot(Regions, 'stat', col.regions = mypalette(16),
+       col = 'coral4', main = 'Число персональных компьютеров, используемых в учебных целях\nобщеобразовательные учреждения',
+       panel = function(x, y, z, subscripts, ...){
+         panel.polygonsplot(x, y, z, subscripts, ...)
+         sp.text(coordinates(Regions),
+                 Regions$name[subscripts])
+       })
+
+# Очищаем память
+rm(Regions)
+```
+
+```{r, warning=FALSE, message=FALSE}
+# установка и сборка пакета «gpclib»
+#install.packages('gpclib', type ="source")
+library('gpclib')
+# включаем остальные пакеты
+require('rgdal')                 # функция readOGR()
+require('plyr')                  # функция join()
+library('ggplot2')               # функция ggplot()
+library('mapproj')               # работа с проекциями карт
+library('scales')                # функция pretty_breaks()
+library('maptools')
+
+gpclibPermit()
+
+# Считываем шейп-файл
+Regions <- readOGR('./data/admin_level_4.shp')
+# Считываем данные полученные с росстата за 2019 год
+data <- read.csv2('./data/data_2019.csv', stringsAsFactors = FALSE)
+data
+
+# Индексы нужных нам регионов
+reg <- c(4, 19, 29, 43, 44, 49, 47, 53, 77, 78, 30, 41, 40, 54)
+
+# Оставляем нужные регионы
+Regions <- Regions[reg, ]
+
+# Создаем столбец id для связи с другими таблицами
+Regions@data$id <- Regions@data$name
+# Преобразовываем SpatialPolygonsDataFrame в data.frame
+Regions.points <- fortify(Regions, region = 'id')
+# Добавляем к координатам сведения о регионах
+Regions.df <- join(Regions.points, Regions@data, by = 'id')
+
+data$id <- data$region
+Regions.df <- join(Regions.df, data[, c('id', 'stat')], by = 'id')
+
+#names(Regions.df)
+# Координаты центров полигонов (для подписей регионов)
+centroids.df <- as.data.frame(coordinates(Regions))
+
+centroids.df$id <- Regions@data$id
+colnames(centroids.df) <- c('long', 'lat', 'id')
+
+# Строим график
+ggplot() + geom_polygon(data = Regions.df,
+                              aes(long, lat, group = group, fill = stat)) +
+  geom_path(data = Regions.df, aes(long, lat, group = group),
+            color = 'coral4') +
+  coord_map(projection = 'gilbert') +
+  scale_fill_distiller(palette = 'OrRd', direction = 1,
+                       breaks = pretty_breaks(n = 5)) +
+  labs(x = 'Долгота', y = 'Широта',
+       title = 'Число персональных компьютеров, используемых в учебных целях\nобщеобразовательные учреждения') +
+  geom_text(data = centroids.df, aes(long, lat, label = id))
+```
+
+
