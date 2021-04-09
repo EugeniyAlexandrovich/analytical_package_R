@@ -1,0 +1,80 @@
+---
+title: "Лабораторная работа №5"
+author: "Галиченко Евгений Александрович"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    self_contained: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## Вариант - 4
+
+Создать .Rmd скрипт, который генерирует html-отчёт с двумя картами:
+
+1. Картограмма с таблицей стран мира по показателю из базы Всемирного банка (интерактивная картограмма из примера).
+2. Карта с маркерами или с радиусами, построенная по набору данных с Портала открытых данных РФ.
+
+Вариант:
+WDI: любой показатель из раздела “Economy & Growth” (Экономика и рост). Портал открытых данных: Объекты культурного наследия на территории Костромской области (id: 4401168294-oknkosobl), взять только расположенные в городе Буй
+
+
+
+GDP growth (annual %)
+
+## Выгрузка данных с WDI
+
+```{r, warning=FALSE, message=FALSE}
+# Библиотеки
+library('WDI')
+library('data.table')
+library('leaflet')
+suppressPackageStartupMessages(library('googleVis'))
+
+data.dir <- './data'
+
+# Создаем директорию для данных
+if (!file.exists(data.dir)) {
+  dir.create(data.dir)
+}
+
+# Индикатор для показателя: GDP growth (annual %) (Рост ВВП (% годовых))
+indicator.code <- 'NY.GDP.MKTP.KD.ZG'
+# dat <- WDI(indicator = indicator.code, start = 2019, end = 2019)
+# # Загружаем данные
+# data <- data.table(dat)
+# 
+# # Загружаем данные в .csv файл
+# write.csv(data, file = './data/data.csv', row.names = FALSE)
+```
+
+## Построение интерактивной картограммы
+
+```{r Интерактивная картограмма, results='asis', cache=TRUE}
+# Загружаем данные
+data <- read.csv('./data/data.csv', header=TRUE, sep = ',')
+data <- data.table(data)
+# Коды стран iso2
+fileURL <- 'https://pkgstore.datahub.io/core/country-list/data_csv/data/d7c9d7cfb42cb69f4422dec222dbbaa8/data_csv.csv'
+all.iso2.country.codes <- read.csv(fileURL, stringsAsFactors = FALSE, na.strings = '.')
+
+# Убираем макрорегионы
+data <- na.omit(data[iso2c %in% all.iso2.country.codes$Code, ])
+
+# Объект таблица исходных данных
+g.table <- gvisTable(data = data[, -'year'], options = list(width = 300, height = 400))
+
+# Объект интерактивная карта
+g.chart <- gvisGeoChart(data = data, locationvar = 'iso2c',
+                        hovervar = 'country', colorvar = indicator.code,
+                        options = list(width = 500, height = 400, dataMode = 'regions'))
+
+# Разместить таблицу и карту на одной панели
+TG <- gvisMerge(g.table, g.chart, horizontal = TRUE,
+                 tableOptions = 'bgcolor=\"#CCCCCC\" cellspacing=10')
+TG
+```

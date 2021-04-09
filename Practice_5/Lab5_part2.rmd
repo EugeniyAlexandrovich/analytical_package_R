@@ -1,0 +1,138 @@
+---
+title: "Лабораторная работа №5"
+author: "Галиченко Евгений Александрович"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Вариант - 4
+
+Создать .Rmd скрипт, который генерирует html-отчёт с двумя картами:
+
+1. Картограмма с таблицей стран мира по показателю из базы Всемирного банка (интерактивная картограмма из примера).
+2. Карта с маркерами или с радиусами, построенная по набору данных с Портала открытых данных РФ.
+
+Вариант:
+WDI: любой показатель из раздела “Economy & Growth” (Экономика и рост). Портал открытых данных: Объекты культурного наследия на территории Костромской области (id: 4401168294-oknkosobl), взять только расположенные в городе Буй
+
+## Получаем данные с портала открытых данных РФ и парсим координаты ОКН по адресам с Yandex карт
+
+```{r, results='asis', message=FALSE, warning=FALSE}
+library('httr')
+library('jsonlite')
+library('XML')
+library('data.table')
+library('RCurl')
+
+# key_API <- '087b07d503be6b5fa0d1cbfb7326deb6'
+# URL.base <- 'http://data.gov.ru/api/'
+# 
+# # Функция для работы с API портала открытых данных РФ
+# getOpenDataRF <- function(api.params, url.base = URL.base, api.key = key_API){
+#   par <- paste0(api.params, collapse = '/')
+#   url <- paste0(url.base, par, '/?access_token=', api.key)
+#   message(paste0('Загружаем ', url, ' ...'))
+#   resp <- GET(url)
+#   fromJSON(content(resp, 'text'))
+# }
+# 
+# dataset_id <- '4401168294-oknkosobl'
+# 
+# # Задаем параметры и получаем данные
+# params <- c('dataset', dataset_id)
+# dataset <- getOpenDataRF(params)
+# 
+# # Количество версий таблицы
+# params <- c(params, 'version')
+# versions <- getOpenDataRF(params)
+# 
+# nrow(versions)
+# 
+# # Загружаем последнюю версию в объект doc
+# mrv <- versions[nrow(versions), 1]
+# params <- c(params, mrv)
+# content <- c(params, 'content')
+# doc <- getOpenDataRF(content)
+# 
+# # Оставляем только те данные в которых присутствует город Буй
+# doc <- doc[grep('г. Буй', doc$Адрес), ]
+# doc <- doc[c(-32), ]
+# head(doc)
+# 
+# 
+# #yandex_API_key <- 'ebcca3c9-14a0-4774-a9ac-bd0608345a25'
+# yandex_API_key <- 'a31dfb4a-5efb-4ccd-bc06-e12a7ce2f2b9'
+# URL.yandex.base <- 'https://geocode-maps.yandex.ru/1.x/'
+# 
+# # Функция для работы с API Yandex Карт
+# getYandexMaps <- function(api.params, url.base = URL.yandex.base, api.key = yandex_API_key){
+#   par <- paste0(api.params, collapse = '&')
+#   url <- paste0(url.base, '?format=xml&apikey=', api.key, par)
+#   message(paste0('Загружаем ', url, ' ...'))
+#   doc.ya <- content(GET(url), 'text', encoding = 'UTF-8')
+# 
+#   rootNode <- xmlRoot(xmlTreeParse(doc.ya, useInternalNodes = TRUE))
+#   coords <- xpathSApply(rootNode, "//*[name()='Envelope']/*", xmlValue)
+#   coords <- lapply(strsplit(coords, ' '), as.numeric)
+#   #coords <- unlist(lapply(coords, mean))
+#   coords <- c((coords[[1]][1] + coords[[2]][1])/2, (coords[[1]][2] + coords[[2]][2])/2)
+#   names(coords) <-c('lat', 'long')
+#   coords
+# }
+# 
+# # Задаем параметры
+# params <-paste0('&geocode=', gsub(pattern =' ', replacement ='+',
+#                                   curlEscape(doc$Адрес[1])))
+# 
+# #getYandexMaps(params)
+# 
+# # Парсим координаты
+# coords <- sapply(as.list(doc$Адрес), function(x){
+#   params <- paste0('&geocode=', gsub(curlEscape(x), pattern = ' ',
+#                                      replacement = '+'))
+#   try(getYandexMaps(params))
+# })
+# 
+# df.coords <- as.data.frame(t(coords))
+# colnames(df.coords) <- c('long', 'lat')
+# 
+# #Добавляем координаты в основной фрейм данных
+# doc <- cbind(doc, df.coords)
+# colnames(doc)[2] <- 'name_OKN'
+# doc
+# # Сохраняем данные в файл
+# write.csv2(doc, file = './data/cultural_heritage_sites.csv', row.names = FALSE)
+
+```
+
+## Строим вторую карту
+
+```{r, results='asis', message=FALSE}
+library(leaflet)
+fileURL <-'./data/ico.png'
+pharm.icon <- makeIcon(iconUrl = fileURL,
+                      iconWidth = 31,
+                      iconHeight = 31,
+                      iconAnchorX = 31,
+                      iconAnchorY = 31)
+
+fileURL <- './data/cultural_heritage_sites.csv'
+doc <- read.csv2(fileURL, stringsAsFactors = FALSE)
+
+doc$lat <- as.numeric(doc$lat)
+doc$long <- as.numeric(doc$long)
+
+# Подпись к объектам
+map.sites <- paste0(doc$name_OKN)
+
+# Создаем виджет с картой
+myMap <- doc %>% leaflet(width =800, height =800) %>%
+  addTiles() %>% addMarkers(icon = pharm.icon, popup = map.sites)
+
+myMap
+```
